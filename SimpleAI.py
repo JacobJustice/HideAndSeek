@@ -11,11 +11,10 @@ def normalize(x, y, speed=1):
 
 class SimpleAI(CircleEntity):
     def __init__(self, x, y, radius, color,speed, v_x=0, v_y=0):
-        self.speed = speed
-        super().__init__(x, y, radius, color, v_x, v_y)
+        super().__init__(x, y, radius, color, speed, v_x, v_y)
 
-    def update(self, player):
-        super().update()
+    def update(self, obstacles, player):
+        super().update(obstacles)
         temp_x = player.x - self.x
         temp_y = player.y - self.y
 
