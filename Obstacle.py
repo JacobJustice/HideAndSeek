@@ -11,15 +11,13 @@ def subtract_vertices(v1, v2):
 class Obstacle:
     vertices = []
     origin = None
-    max_distance=40
     always_check=False
-    def __init__(self, field_width, field_height, vertices=None, origin=None, num_vertices=4) -> None:
-        self.max_distance += randint(0,50)
+    def __init__(self, field_width, field_height, vertices=None, origin=None, num_vertices=4, size=40) -> None:
+        self.size = size + randint(0,50)
         if self.origin == None:
             self.origin = (randint(0, field_width), randint(0,field_height))
         if vertices == None:
-            self.vertices = generate_polygon(self.origin, self.max_distance, irregularity=0.1, spikiness=0.1, num_vertices=num_vertices)
-            print(self.vertices)
+            self.vertices = generate_polygon(self.origin, self.size, irregularity=0.1, spikiness=0.1, num_vertices=num_vertices)
         else:
             self.vertices = vertices
         
@@ -28,38 +26,21 @@ class Obstacle:
 
     def display(self, screen):
         pygame.draw.polygon(screen, self.color, self.vertices)
+    
+    def is_circle_inside_polygon(self, circle_center, radius):
+        min_distance = float("inf")
+        for i in range(len(self.vertices)):
+            p1 = self.vertices[i]
+            p2 = self.vertices[(i + 1) % len(self.vertices)]
+            # Compute the distance between the center of the circle and the line containing the current side of the polygon
+            distance = abs((p2[1] - p1[1]) * circle_center[0] - (p2[0] - p1[0]) * circle_center[1] + p2[0] * p1[1] - p2[1] * p1[0]) / math.sqrt((p2[1] - p1[1]) ** 2 + (p2[0] - p1[0]) ** 2)
+            if distance < min_distance:
+                min_distance = distance
+        if min_distance < radius:
+            return True
+        else:
+            return False
        
-#    # takes in a CircleEntity, outputs true or false
-#    def collision(self, x, y, circle):
-#        intersection_edge = None # Initialize intersection edge to None
-#        for i in range(len(self.vertices)):
-#            edge = self.vertices[i] - self.vertices[(i + 1) % len(self.vertices)]
-#            normal = [-edge[1], edge[0]]
-#            normal_length = math.sqrt(normal[0] ** 2 + normal[1] ** 2)
-#            normal = [normal[0] / normal_length, normal[1] / normal_length]
-#    
-#            circle_projection = x * normal[0] + y * normal[1]
-#            circle_min_projection = circle_projection - circle.radius
-#            circle_max_projection = circle_projection + circle.radius
-#    
-#            polygon_min_projection = float('inf')
-#            polygon_max_projection = float('-inf')
-#            for vertex in self.vertices:
-#                projection = vertex[0] * normal[0] + vertex[1] * normal[1]
-#                if projection < polygon_min_projection:
-#                    polygon_min_projection = projection
-#                if projection > polygon_max_projection:
-#                    polygon_max_projection = projection
-#    
-#            if circle_max_projection < polygon_min_projection or circle_min_projection > polygon_max_projection:
-#                continue # No collision on this edge
-#            
-#            # Collision detected on this edge. Set the intersection edge.
-#            intersection_edge = edge
-#            break # No need to check remaining edges
-#    
-#        return True if intersection_edge is not None else False, intersection_edge
-   
     def collision(self, center, circle):
         # Find the intersection points between the circle and the polygon
         intersections = []
