@@ -48,4 +48,5 @@ class CircleEntity():
 
     def display(self, screen):
         pygame.draw.circle(screen, self.color, (self.x, self.y), self.radius)
+        pygame.draw.line(screen, (max([self.color[0]-30,0]), max([self.color[1]-30,0]), max([self.color[2]-30, 0])), (self.x,self.y), (self.x+self.v_x*5, self.y+self.v_y*5), width=3)
 

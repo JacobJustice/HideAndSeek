@@ -4,7 +4,7 @@ import sys
 import random
 from player import Player
 from SimpleAI import SimpleAI
-from RRTAI2 import RRTAI2
+from RRTAI import RRTAI
 from RandomAI import RandomAI
 from Obstacle import Obstacle, check_collision
 
@@ -87,7 +87,7 @@ class Model:
 
         edge = random.randint(0,3)
         xy = get_ai_spawn_location(edge, self.obstacles)
-        self.entities.append(RRTAI2(
+        self.entities.append(RRTAI(
                 x=xy[0]
                ,y=xy[1]
                ,radius=random.randrange(MIN_RADIUS,MAX_RADIUS)
@@ -161,8 +161,8 @@ class View:
 #        if model.debug:
 #            model.roadmap.display(self.screen)
             
-        timer = self.font.render(str(self.elapsed_time / 1000), True, self.font_color)
-        ai_spawned = self.font.render("AI Spawned:" + str(len(model.entities)-1), True, self.font_color)
+        timer = self.font.render("Time(s): " + str(self.elapsed_time / 1000), True, self.font_color)
+        ai_spawned = self.font.render("AI Spawned: " + str(len(model.entities)-1), True, self.font_color)
         self.screen.blit(ai_spawned, (150, 68))
         self.screen.blit(timer, (150, 100))
         pygame.display.update()

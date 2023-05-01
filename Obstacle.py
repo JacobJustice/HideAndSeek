@@ -18,7 +18,7 @@ class Obstacle:
     vertices = []
     origin = None
     always_check=False
-    def __init__(self, field_width, field_height, vertices=None, origin=None, num_vertices=4, size=40) -> None:
+    def __init__(self, field_width, field_height, vertices=None, origin=None, num_vertices=7, size=40) -> None:
         self.size = size + randint(0,50)
         if self.origin == None:
             self.origin = (randint(0, field_width), randint(0,field_height))
