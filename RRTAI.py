@@ -65,10 +65,10 @@ class RRTAI(CircleEntity):
     def __init__(self, x, y, radius, color,speed, maxwidth, maxheight, v_x=0, v_y=0):
         super().__init__(x, y, radius, color, speed, v_x, v_y)
         self.iter = 0
-        self.x_max = maxwidth
-        self.y_max = maxheight
-        self.x_min = 0
-        self.y_min = 0
+        self.x_max = maxwidth+200
+        self.y_max = maxheight+200
+        self.x_min = -200
+        self.y_min = -200
         self.maxdistance = 200
         self.tree_speed = speed*14
         self.tree = {(x,y):[]}
@@ -175,9 +175,10 @@ class RRTAI(CircleEntity):
            pygame.draw.circle(screen, (128,128,128), node, self.radius/3)
            for child in children:
                pygame.draw.line(screen, (128,128,128), node, child)
-        pygame.draw.circle(screen, (255,0,50), self.nearest_node, self.radius/3)
+        if (self.nearest_node is not None):
+            pygame.draw.circle(screen, (255,0,50), self.nearest_node, (self.radius//3)+1)
         if len(self.path) > 0:
-            pygame.draw.circle(screen, (0,255,50), self.path[-1], self.radius/3)
+            pygame.draw.circle(screen, (0,255,50), self.path[-1], self.radius//3)
         
         super().display(screen)
 

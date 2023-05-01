@@ -47,7 +47,7 @@ class Model:
         obs_size = 50
 
         # gen player and obstacles
-        self.player = Player(x=SCREEN_WIDTH/2,y=SCREEN_HEIGHT/2,radius=15,color=(255,0,0), speed=5)
+        self.player = Player(x=SCREEN_WIDTH/2,y=SCREEN_HEIGHT/2,radius=25,color=(255,0,0), speed=5)
         if gen_obstacles:
             self.obstacles = [Obstacle(SCREEN_WIDTH, SCREEN_HEIGHT, size=obs_size) for x in range(NUM_OBSTACLES)]
             # ensure player isn't colliding with obstacles
@@ -109,6 +109,9 @@ class Model:
         if self.lost and controller.space:
             self.lost = False
             self.__init__(gen_obstacles=False)
+        if self.lost and controller.tab:
+            self.lost = False
+            self.__init__(gen_obstacles=True)
 
         #calculate dt
         dt = self.clock.tick(self.FPS) / 1000
@@ -143,8 +146,10 @@ class View:
         self.lose_font = pygame.font.SysFont("Arial", 64)
         self.lose_text1 = self.lose_font.render("YOU LOSE!!", True, self.font_color)
         self.lose_text1rect = self.lose_text1.get_rect(center = (SCREEN_WIDTH/2, (SCREEN_HEIGHT/2) - 65))
-        self.lose_text2 = self.lose_font.render("Press space to try again", True, self.font_color)
+        self.lose_text2 = self.lose_font.render("Press SPACE to try again with the same map", True, self.font_color)
         self.lose_text2rect = self.lose_text2.get_rect(center = (SCREEN_WIDTH/2, (SCREEN_HEIGHT/2)))
+        self.lose_text3 = self.lose_font.render("Press TAB to try again with a new map", True, self.font_color)
+        self.lose_text3rect = self.lose_text3.get_rect(center = (SCREEN_WIDTH/2, (SCREEN_HEIGHT/2)+65))
 
     def display(self, model):
         self.screen.fill(self.background_color)
@@ -157,6 +162,7 @@ class View:
         else:
             self.screen.blit(self.lose_text1, self.lose_text1rect)
             self.screen.blit(self.lose_text2, self.lose_text2rect)
+            self.screen.blit(self.lose_text3, self.lose_text3rect)
         
 #        if model.debug:
 #            model.roadmap.display(self.screen)
@@ -181,6 +187,7 @@ from pygame.locals import (
     K_d,
     K_SPACE,
     K_ESCAPE,
+    K_TAB,
     KEYDOWN,
     QUIT,
 )
@@ -192,6 +199,7 @@ class Controller:
     player_up = False
     player_down = False
     space = False
+    tab = False
     
     def update(self):
         self.player_down = False
@@ -199,6 +207,7 @@ class Controller:
         self.player_left = False
         self.player_right = False        
         self.space = False
+        self.tab = False
         for event in pygame.event.get():
             if event.type == QUIT:
                 self.quit = True
@@ -216,6 +225,8 @@ class Controller:
             self.player_left = True
         if keys[K_SPACE]:
             self.space = True
+        if keys[K_TAB]:
+            self.tab = True
        
                 
 if __name__ == '__main__':
