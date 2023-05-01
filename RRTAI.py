@@ -175,7 +175,9 @@ class RRTAI(CircleEntity):
            pygame.draw.circle(screen, (128,128,128), node, self.radius/3)
            for child in children:
                pygame.draw.line(screen, (128,128,128), node, child)
-        pygame.draw.circle(screen, (0,255,50), self.nearest_node, self.radius/3)
+        pygame.draw.circle(screen, (255,0,50), self.nearest_node, self.radius/3)
+        if len(self.path) > 0:
+            pygame.draw.circle(screen, (0,255,50), self.path[-1], self.radius/3)
         
         super().display(screen)
 

@@ -47,7 +47,7 @@ class Model:
         obs_size = 50
 
         # gen player and obstacles
-        self.player = Player(x=SCREEN_WIDTH/2,y=SCREEN_HEIGHT/2,radius=10,color=(255,0,0), speed=5)
+        self.player = Player(x=SCREEN_WIDTH/2,y=SCREEN_HEIGHT/2,radius=15,color=(255,0,0), speed=5)
         if gen_obstacles:
             self.obstacles = [Obstacle(SCREEN_WIDTH, SCREEN_HEIGHT, size=obs_size) for x in range(NUM_OBSTACLES)]
             # ensure player isn't colliding with obstacles
