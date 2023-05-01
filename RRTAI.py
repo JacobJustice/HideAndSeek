@@ -6,8 +6,6 @@ import pygame
 import numpy as np
 import random
 import math
-from pprint import pprint
-import copy
 
 def normalized(a, axis=-1, order=2):
     l2 = np.atleast_1d(np.linalg.norm(a, order, axis))
