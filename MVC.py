@@ -4,31 +4,33 @@ import sys
 import random
 from player import Player
 from SimpleAI import SimpleAI
-from RRTAI import RRTAI
+from RRTAI2 import RRTAI2
 from RandomAI import RandomAI
-from Obstacle import Obstacle
+from Obstacle import Obstacle, check_collision
 
 SCREEN_WIDTH = 1200
 SCREEN_HEIGHT = 900
 MIN_RADIUS = 10
 MAX_RADIUS = 25
-NUM_OBSTACLES = 10
+NUM_OBSTACLES = 20
 
-def get_ai_spawn_location(edge):
+def get_ai_spawn_location(edge, obstacles):
     #edge 0: x= 0, screenwidth ; y = 0
     if edge == 0:
-        return (random.randint(0, SCREEN_WIDTH), 0)
+        spawn = (random.randint(0, SCREEN_WIDTH), 0)
     #edge 1: x= 0, screenwidth ; y = screenheight
     elif edge == 1:
-        return (random.randint(0, SCREEN_WIDTH), SCREEN_HEIGHT)
+        spawn = (random.randint(0, SCREEN_WIDTH), SCREEN_HEIGHT)
     #edge 2: x= screenwidth ; y = 0, screenheight
     elif edge == 2:
-        return (SCREEN_WIDTH, random.randint(0, SCREEN_HEIGHT))
+        spawn = (SCREEN_WIDTH, random.randint(0, SCREEN_HEIGHT))
     #edge 3: x= 0 ; y = 0, screenheight
-    elif edge == 3:
-        return (0, random.randint(0, SCREEN_HEIGHT))
     else:
-        return (0,0)
+        spawn = (0, random.randint(0, SCREEN_HEIGHT))
+    if not check_collision(spawn, 20, obstacles):
+        return spawn
+    else:
+        return get_ai_spawn_location(random.randint(0,3), obstacles)
 
 class Model:
     screen_width = SCREEN_WIDTH
@@ -61,26 +63,16 @@ class Model:
             #self.roadmap = self.generate_roadmap()
 
         self.entities = [self.player]
-        self.generate_AI()
-        self.generate_AI()
-        self.generate_AI()
-
-    def generate_roadmap(self):
-        return prmplanner.build_roadmap(
-                            (SCREEN_WIDTH, SCREEN_HEIGHT),
-                            MAX_RADIUS,
-                            self.obstacles
-        )
     
     def generate_AI(self):
         edge = random.randint(0,3)
-        xy = get_ai_spawn_location(edge)
+        xy = get_ai_spawn_location(edge, self.obstacles)
         if random.random() > .5:
             self.entities.append(RandomAI(
                      x=xy[0]
                     ,y=xy[1]
                     ,radius=random.randrange(MIN_RADIUS,MAX_RADIUS)
-                    ,color=(200,200,20)
+                    ,color=(0,200,20)
                     ,speed=random.randrange(2,5)
                 
             ))
@@ -93,16 +85,17 @@ class Model:
                     ,speed=random.randrange(2,5)
                     ))
 
-#        self.entities.append(RRTAI(
-#                 x=xy[0]
-#                ,y=xy[1]
-#                ,radius=random.randrange(MIN_RADIUS,MAX_RADIUS)
-#                ,color=(200,200,20)
-#                ,speed=random.randrange(2,5)
-#                ,maxwidth=SCREEN_WIDTH
-#                ,maxheight=SCREEN_HEIGHT
-#                
-#        ))
+        edge = random.randint(0,3)
+        xy = get_ai_spawn_location(edge, self.obstacles)
+        self.entities.append(RRTAI2(
+                x=xy[0]
+               ,y=xy[1]
+               ,radius=random.randrange(MIN_RADIUS,MAX_RADIUS)
+               ,color=(200,200,20)
+               ,speed=random.randrange(5,7)
+               ,maxwidth=SCREEN_WIDTH
+               ,maxheight=SCREEN_HEIGHT
+        ))
 
 
 
@@ -132,16 +125,10 @@ class Model:
 
         #skip first entity for update, because that's the player
         for ai in self.entities[1:]:
-            if ai.complex:
-                if ai.update(self.roadmap, self.player, self.obstacles) == 1:
-                    # you lose the game
-                    self.lost = True
-                    break
-            elif not ai.complex:
-                if ai.update(self.obstacles, self.player) == 1:
-                    # you lose the game
-                    self.lost = True
-                    break
+            if ai.update(self.obstacles, self.player) == 1:
+                # you lose the game
+                self.lost = True
+                break
 
 
 class View:
@@ -229,7 +216,7 @@ class Controller:
             self.player_left = True
         if keys[K_SPACE]:
             self.space = True
-        
+       
                 
 if __name__ == '__main__':
     import main

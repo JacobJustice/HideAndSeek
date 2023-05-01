@@ -8,6 +8,12 @@ import numpy as np
 def subtract_vertices(v1, v2):
     return (v1[0]-v2[0], v1[1]-v2[1])
 
+def check_collision(pos, radius, obstacles):
+    for obstacle in obstacles:
+         if obstacle.collision(pos, radius)[0] or obstacle.inside_polygon(pos[0],pos[1]):
+            return True
+    return False
+
 class Obstacle:
     vertices = []
     origin = None

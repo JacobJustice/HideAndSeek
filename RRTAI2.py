@@ -1,5 +1,6 @@
 from CircleEntity import CircleEntity
 from SimpleAI import SimpleAI
+from Obstacle import check_collision
 import heapq
 import pygame
 import numpy as np
@@ -20,11 +21,6 @@ def gen_random_move(R, cx, cy):
         y = cy + r*math.sin(theta)
         return np.array((x, y))
 
-def check_collision(pos, radius, obstacles):
-    for obstacle in obstacles:
-         if obstacle.collision(pos, radius)[0] or obstacle.inside_polygon(pos[0],pos[1]):
-            return True
-    return False
 
 
 # Define a function to compute the Euclidean distance between two points
@@ -35,10 +31,7 @@ def get_neighbors(node, tree):
     return [child for child, parent in tree.items() if parent == node]
 
 # Define the A* algorithm to find the optimal path from the start to the goal
-def astar(nearest, start, goal, tree):
-    #insert goal into the tree
-    tree[tuple(goal)] = nearest
-
+def astar(start, goal, tree):
     frontier = [(distance(start, goal), start)]
     came_from = {start: None}
     cost_so_far = {start: 0}
@@ -47,15 +40,16 @@ def astar(nearest, start, goal, tree):
         _, current = heapq.heappop(frontier)
 
         if np.array_equal(current, goal):
+            print()
             path = []
             while current is not None:
                 path.append(current)
                 current = came_from[current]
             print("path", path)
-            return path[::-1]
+            path.reverse()
+            return path
 
-        children = get_neighbors(current, tree)
-        print(children)
+        children = tree[current]
 
         for child in children:
             new_cost = cost_so_far[current] + distance(current, child)  # assuming all edges have unit cost
@@ -65,9 +59,11 @@ def astar(nearest, start, goal, tree):
                 heapq.heappush(frontier, (priority, child))
                 came_from[child] = current
 
-    return None  # no path found
+    return []  # no path found
 
-class RRTAI(SimpleAI):
+from queue import PriorityQueue
+       
+class RRTAI2(CircleEntity):
     def __init__(self, x, y, radius, color,speed, maxwidth, maxheight, v_x=0, v_y=0):
         super().__init__(x, y, radius, color, speed, v_x, v_y)
         self.iter = 0
@@ -75,59 +71,52 @@ class RRTAI(SimpleAI):
         self.y_max = maxheight
         self.x_min = 0
         self.y_min = 0
+        self.maxdistance = 200
         self.tree_speed = speed*14
-        self.tree = {(x,y):None}
+        self.tree = {(x,y):[]}
         self.path = None
-        self.nearest_node = None
+        self.nearest_node = None # the node in the tree closest to the player
         self.reached_node = False
         self.maxiter = 100
+        self.dir = (0,0)
+        self.reached_goal = False
+        self.path = [(x,y)]
+        print("initpath", self.path)
 
     # returns direction to next node
-    def get_direction(self, goal_nearest, goal, obstacles):
-        #print('get dir')
-        # if that node is the same node as previous, continue along path
-        # if that node is different, recompute path
-        if goal_nearest is not self.nearest_node:
-            self.nearest_node = goal_nearest
-            start_nearest = None
-            min_dist = float('inf')
-            #pprint(self.tree)
-            start = np.array((self.x, self.y))
-            for node in self.tree:
-                dist = np.linalg.norm(np.array(node) - start)
-                if dist < min_dist:
-                    min_dist = dist
-                    start_nearest = node
-            copytree = copy.deepcopy(self.tree)
-            copytree[(self.x, self.y)] = start_nearest
-            self.path = astar(goal_nearest, (self.x,self.y), goal, copytree)
-
-        #print('path', self.path)
+    def get_direction(self):
         if self.path == [] or self.path == None:
             return np.array((0,0))
         #compute direction from current position to next point on the node
         dir = np.array((self.path[0][0] - self.x, self.path[0][1]-self.y))
-        #print(self.nearest_node, self.x,self.y, self.reached_node)
-        if self.reached_node and len(self.path) > 1:
-            print("reached")
-            self.path.pop(0)
-            print(self.path)
-            dir = np.array((self.path[0][0] - self.x, self.path[0][1]-self.y))
         return dir
+    
+    def add_to_tree(self, n1, n2):
+        n1_list = self.tree.get(tuple(n1), [])
+        if n1_list is not None and tuple(n2) not in n1_list:
+            n1_list.append(tuple(n2))
+            self.tree[tuple(n1)] = n1_list
+        n2_list = self.tree.get(tuple(n2), [])
+        if n2_list is not None and tuple(n2) not in n2_list:
+            n2_list.append(tuple(n1))
+            self.tree[tuple(n2)] = n2_list
 
     def update(self, obstacles, player):
         goal = np.array((player.x, player.y))
         # check closest node to player
-        goal_nearest_node = None
         min_dist = float('inf')
         #pprint(self.tree)
         for node in self.tree:
             dist = np.linalg.norm(np.array(node) - goal)
             if dist < min_dist:
                 min_dist = dist
-                goal_nearest_node = node
+                self.nearest_node = node
 
-        if self.iter < self.maxiter:
+        if (self.reached_goal):
+            print("adding new node")
+            # make 1 new node
+            self.reached_node = False
+            self.reached_goal = False
             rand = np.array([np.random.uniform(self.x_min, self.x_max), np.random.uniform(self.y_min, self.y_max)])
         
             nearest_node = None
@@ -141,46 +130,58 @@ class RRTAI(SimpleAI):
 
             new_node = np.array(nearest_node) + self.tree_speed * (rand - np.array(nearest_node)) / min_dist
             if tuple(new_node) not in self.tree and not any([new_node[0] > self.x_max, new_node[0] < self.x_min, new_node[1] > self.y_max, new_node[1] < self.y_min]):
-                collision = False
-                for obs in obstacles:
-                    if check_collision(new_node, self.radius, obstacles):
-                        collision = True
-                        break
+                collision = check_collision(new_node, self.radius*2, obstacles)
                 if not collision:
-                    #print("NEAREST", nearest_node)
-                    self.tree[tuple(new_node)] = tuple(nearest_node)
-                    #print(self.tree[tuple(new_node)])
-
+                    self.add_to_tree(new_node, nearest_node)
                     if np.linalg.norm(new_node - goal) <= self.tree_speed:
-                        self.tree[tuple(goal)] = tuple(new_node)
-            self.iter += 1
-        
-        #get direction
-        #print(self.path)
-        dir = self.get_direction(goal_nearest_node, goal, obstacles)
-        if dir is None:
-            return 0
-        #scale direction by speed, or by remaining distance to next node
-        if (np.linalg.norm(dir)) < self.speed:
-            #print('dir', dir)
-            self.v_x = dir[0]
-            self.v_y = dir[1]
-            self.reached_node = True
+                        self.add_to_tree(new_node, goal)
+            #with the new node, create a new path from curr position to the nearest node to player
+            self.path = astar((self.x,self.y), self.nearest_node, self.tree)
+            print("output astar", self.path)
+            if self.path == []:
+                self.reached_goal = True
+            self.dir = self.get_direction()
         else:
-            norm_dir = normalized(dir)
-            speed_dir = norm_dir * self.speed
-            self.v_x = speed_dir[0]
-            self.v_y = speed_dir[1]
+            #check if you're at your current target goal node
+            if (self.reached_node):
+                self.reached_node=False
+                #if you are, advance along the path by 1
+                self.path.pop(0)
+                print("popped path", len(self.path))
+                if len(self.path) == 0:
+                    self.reached_goal = True
+            
+            #if you're not at the goal keep moving in the direction towards the goal
+            self.dir = self.get_direction()
+            if self.dir is None:
+                return 0
+            elif (np.linalg.norm(self.dir)) < self.speed:
+                #print('dir', dir)
+                self.v_x = self.dir[0]
+                self.v_y = self.dir[1]
+                self.reached_node = True
+            else:
+                norm_dir = normalized(self.dir)
+                speed_dir = norm_dir * self.speed
+                self.v_x = speed_dir[0]
+                self.v_y = speed_dir[1]
         
-        collide = super().update(obstacles, player)
-        
-        return collide
+        super().update(obstacles)
+
+        temp_x = player.x - self.x
+        temp_y = player.y - self.y
+        dist = math.sqrt(temp_x**2 + temp_y**2)
+        if dist < self.radius:
+            return 1
+        return 0
         
                 
     def display(self, screen):
         pygame.draw.circle(screen, self.color, (self.x, self.y), self.radius)
-        for node in self.tree:
-            pygame.draw.circle(screen, (128,128,128), node, self.radius/3)
+        for node, children in self.tree.items():
+           pygame.draw.circle(screen, (128,128,128), node, self.radius/3)
+           for child in children:
+               pygame.draw.line(screen, (128,128,128), node, child)
         pygame.draw.circle(screen, (0,255,50), self.nearest_node, self.radius/3)
 
 
