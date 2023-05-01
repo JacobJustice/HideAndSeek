@@ -2,12 +2,18 @@ import pygame
 import numpy as np
 import sys
 import random
+import prmplanner
 from player import Player
 from SimpleAI import SimpleAI
+from PRMAI import PRMAI
+from RRTAI import RRTAI
+from RandomAI import RandomAI
 from Obstacle import Obstacle
 
 SCREEN_WIDTH = 1200
 SCREEN_HEIGHT = 900
+MIN_RADIUS = 10
+MAX_RADIUS = 25
 NUM_OBSTACLES = 10
 
 def get_ai_spawn_location(edge):
@@ -31,37 +37,76 @@ class Model:
     screen_height = SCREEN_HEIGHT
     FPS = 60
     running = True
-    def generate_AI(self):
-        edge = random.randint(0,3)
-        xy = get_ai_spawn_location(edge)
-
-        self.entities.append(SimpleAI(
-                 x=xy[0]
-                ,y=xy[1]
-                ,radius=random.randrange(10,25)
-                ,color=(0,50,200)
-                ,speed=random.randrange(2,5)
-                ))
-
-    def __init__(self):
+    debug = True
+    loadingfont = None
+    def __init__(self, gen_obstacles=True):
         self.lost = False
         self.clock = pygame.time.Clock()
         self.passed_time = 0.0
         self.ai_spawn_times = set()
         obs_size = 50
+
+        # gen player and obstacles
         self.player = Player(x=SCREEN_WIDTH/2,y=SCREEN_HEIGHT/2,radius=10,color=(255,0,0), speed=5)
-        self.obstacles = [Obstacle(SCREEN_WIDTH, SCREEN_HEIGHT, size=obs_size) for x in range(NUM_OBSTACLES)]
-        # ensure player isn't colliding with obstacles
-        center = np.array((self.player.x, self.player.y))
-        for i, obstacle in enumerate(self.obstacles):
-            inside = obstacle.is_circle_inside_polygon(center, self.player.radius) or obstacle.collision(center, self.player)
-            while inside:
-                self.obstacles[i] = Obstacle(SCREEN_WIDTH, SCREEN_HEIGHT,size=obs_size)
-                print(self.obstacles[i].size)
-                inside = self.obstacles[i].is_circle_inside_polygon(center, self.player.radius) or self.obstacles[i].collision(center, self.player)[0]
-                print(inside)
+        if gen_obstacles:
+            self.obstacles = [Obstacle(SCREEN_WIDTH, SCREEN_HEIGHT, size=obs_size) for x in range(NUM_OBSTACLES)]
+            # ensure player isn't colliding with obstacles
+            center = np.array((self.player.x, self.player.y))
+            for i, obstacle in enumerate(self.obstacles):
+                inside = obstacle.inside_polygon(self.player.x, self.player.y) or obstacle.collision(center, self.player.radius)
+                while inside:
+                    self.obstacles[i] = Obstacle(SCREEN_WIDTH, SCREEN_HEIGHT,size=obs_size)
+                    print(self.obstacles[i].size)
+                    inside = self.obstacles[i].inside_polygon(self.player.x, self.player.y) or self.obstacles[i].collision(center, self.player.radius)[0]
+                    print(inside)
+        
+            #self.roadmap = self.generate_roadmap()
+
         self.entities = [self.player]
         self.generate_AI()
+        self.generate_AI()
+        self.generate_AI()
+
+    def generate_roadmap(self):
+        return prmplanner.build_roadmap(
+                            (SCREEN_WIDTH, SCREEN_HEIGHT),
+                            MAX_RADIUS,
+                            self.obstacles
+        )
+    
+    def generate_AI(self):
+        edge = random.randint(0,3)
+        xy = get_ai_spawn_location(edge)
+        if random.random() > .5:
+            self.entities.append(RandomAI(
+                     x=xy[0]
+                    ,y=xy[1]
+                    ,radius=random.randrange(MIN_RADIUS,MAX_RADIUS)
+                    ,color=(200,200,20)
+                    ,speed=random.randrange(2,5)
+                
+            ))
+        else:
+            self.entities.append(SimpleAI(
+                     x=xy[0]
+                    ,y=xy[1]
+                    ,radius=random.randrange(MIN_RADIUS,MAX_RADIUS)
+                    ,color=(0,50,200)
+                    ,speed=random.randrange(2,5)
+                    ))
+
+#        self.entities.append(RRTAI(
+#                 x=xy[0]
+#                ,y=xy[1]
+#                ,radius=random.randrange(MIN_RADIUS,MAX_RADIUS)
+#                ,color=(200,200,20)
+#                ,speed=random.randrange(2,5)
+#                ,maxwidth=SCREEN_WIDTH
+#                ,maxheight=SCREEN_HEIGHT
+#                
+#        ))
+
+
 
     def __str__(self):
         return ''
@@ -72,7 +117,7 @@ class Model:
             sys.exit()
         if self.lost and controller.space:
             self.lost = False
-            self.__init__()
+            self.__init__(gen_obstacles=False)
 
         #calculate dt
         dt = self.clock.tick(self.FPS) / 1000
@@ -89,9 +134,16 @@ class Model:
 
         #skip first entity for update, because that's the player
         for ai in self.entities[1:]:
-            if ai.update(self.obstacles, self.player) == 1:
-                # you lose the game
-                self.lost = True
+            if ai.complex:
+                if ai.update(self.roadmap, self.player, self.obstacles) == 1:
+                    # you lose the game
+                    self.lost = True
+                    break
+            elif not ai.complex:
+                if ai.update(self.obstacles, self.player) == 1:
+                    # you lose the game
+                    self.lost = True
+                    break
 
 
 class View:
@@ -120,6 +172,9 @@ class View:
         else:
             self.screen.blit(self.lose_text1, self.lose_text1rect)
             self.screen.blit(self.lose_text2, self.lose_text2rect)
+        
+#        if model.debug:
+#            model.roadmap.display(self.screen)
             
         timer = self.font.render(str(self.elapsed_time / 1000), True, self.font_color)
         ai_spawned = self.font.render("AI Spawned:" + str(len(model.entities)-1), True, self.font_color)

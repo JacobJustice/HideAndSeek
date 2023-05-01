@@ -27,7 +27,7 @@ class CircleEntity():
         future_y = self.y+self.v_y
         future_center = np.array((self.x+self.v_x, self.y+self.v_y))
         for obstacle in obstacles:
-            collide, edge = obstacle.collision(future_center, self)
+            collide, edge = obstacle.collision(future_center, self.radius)
             iters = 0
             while collide:
                 normal = np.array((-edge[1], edge[0]))
@@ -36,7 +36,7 @@ class CircleEntity():
                 new_velocity = velocity - projection
                 self.v_x, self.v_y = new_velocity[0], new_velocity[1] 
                 future_center = np.array((self.x+self.v_x, self.y+self.v_y))
-                collide, edge = obstacle.collision(future_center, self)
+                collide, edge = obstacle.collision(future_center, self.radius)
                 iters += 1
                 if iters > 5:
                     self.v_x = 0

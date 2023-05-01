@@ -27,28 +27,28 @@ class Obstacle:
     def display(self, screen):
         pygame.draw.polygon(screen, self.color, self.vertices)
     
-    def is_circle_inside_polygon(self, circle_center, radius):
-        min_distance = float("inf")
+    def inside_polygon(self, x, y):
+        intersections = 0
         for i in range(len(self.vertices)):
-            p1 = self.vertices[i]
-            p2 = self.vertices[(i + 1) % len(self.vertices)]
-            # Compute the distance between the center of the circle and the line containing the current side of the polygon
-            distance = abs((p2[1] - p1[1]) * circle_center[0] - (p2[0] - p1[0]) * circle_center[1] + p2[0] * p1[1] - p2[1] * p1[0]) / math.sqrt((p2[1] - p1[1]) ** 2 + (p2[0] - p1[0]) ** 2)
-            if distance < min_distance:
-                min_distance = distance
-        if min_distance < radius:
-            return True
-        else:
-            return False
+            x1, y1 = self.vertices[i]
+            x2, y2 = self.vertices[(i + 1) % len(self.vertices)]
+            if y > min(y1, y2):
+                if y <= max(y1, y2):
+                    if x <= max(x1, x2):
+                        if y1 != y2:
+                            x_intercept = (y - y1) * (x2 - x1) / (y2 - y1) + x1
+                            if x1 == x2 or x <= x_intercept:
+                                intersections += 1
+        return intersections % 2 != 0
        
-    def collision(self, center, circle):
+    def collision(self, center, radius):
         # Find the intersection points between the circle and the polygon
         intersections = []
         for i in range(len(self.vertices)):
             j = (i + 1) % len(self.vertices)
             p1 = self.vertices[i]
             p2 = self.vertices[j]
-            intersection = line_circle_intersection(p1, p2, center, circle.radius)
+            intersection = line_circle_intersection(p1, p2, center, radius)
             if intersection is not None:
                 intersections.append(intersection)
 

@@ -10,6 +10,7 @@ def normalize(x, y, speed=1):
     return normalized_t
 
 class SimpleAI(CircleEntity):
+    complex = False
     def __init__(self, x, y, radius, color,speed, v_x=0, v_y=0):
         super().__init__(x, y, radius, color, speed, v_x, v_y)
 
