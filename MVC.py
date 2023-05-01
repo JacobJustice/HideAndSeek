@@ -2,10 +2,8 @@ import pygame
 import numpy as np
 import sys
 import random
-import prmplanner
 from player import Player
 from SimpleAI import SimpleAI
-from PRMAI import PRMAI
 from RRTAI import RRTAI
 from RandomAI import RandomAI
 from Obstacle import Obstacle
