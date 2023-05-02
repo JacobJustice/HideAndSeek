@@ -45,7 +45,7 @@ def astar(start, goal, tree):
         children = tree.get(current, [])
 
         for child in children:
-            new_cost = cost_so_far[current] + distance(current, child)  # assuming all edges have unit cost
+            new_cost = cost_so_far[current] + distance(current, child)  
             if child not in cost_so_far or new_cost < cost_so_far[child]:
                 cost_so_far[child] = new_cost
                 priority = new_cost + distance(child, goal)
