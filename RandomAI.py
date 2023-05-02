@@ -30,18 +30,13 @@ class RandomAI(SimpleAI):
 
     def update(self, obstacles, player):
         collision = super().update(obstacles, player)
-        #generate random directions from current position, choose the one that moves you closest to the goal
-        possible_moves = [gen_random_move(self.speed, self.x, self.y) for x in range(10)]
-        lowest = (-1, float("inf"))
         player_center = np.array((player.x, player.y))
         center = np.array((self.x, self.y))
-        for i, pos in enumerate(possible_moves):
-            dist = np.linalg.norm(pos - player_center)
-            check1 = dist < lowest[1]
-            check2 = not check_collision(pos, self.radius, obstacles)
-            if check1 and check2:
-                lowest = (i, dist)
-        dir = possible_moves[lowest[0]]-center
+        #generate random directions from current position, choose the one that moves you closest to the goal
+        possible_moves = [gen_random_move(self.speed, self.x, self.y) for x in range(10)]
+        dists = [np.linalg.norm(pos - player_center) for pos in possible_moves]
+        i_lowest = dists.index(min(dists))
+        dir = possible_moves[i_lowest]-center
         self.v_x = dir[0]
         self.v_y = dir[1]
         

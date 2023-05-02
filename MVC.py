@@ -12,7 +12,7 @@ SCREEN_WIDTH = 1200
 SCREEN_HEIGHT = 900
 MIN_RADIUS = 10
 MAX_RADIUS = 25
-NUM_OBSTACLES = 20
+NUM_OBSTACLES = 15
 
 def get_ai_spawn_location(edge, obstacles):
     #edge 0: x= 0, screenwidth ; y = 0
@@ -44,7 +44,7 @@ class Model:
         self.clock = pygame.time.Clock()
         self.passed_time = 0.0
         self.ai_spawn_times = set()
-        obs_size = 50
+        obs_size = 35
 
         # gen player and obstacles
         self.player = Player(x=SCREEN_WIDTH/2,y=SCREEN_HEIGHT/2,radius=25,color=(255,0,0), speed=5)
@@ -59,31 +59,32 @@ class Model:
                     print(self.obstacles[i].size)
                     inside = self.obstacles[i].inside_polygon(self.player.x, self.player.y) or self.obstacles[i].collision(center, self.player.radius)[0]
                     print(inside)
-        
-            #self.roadmap = self.generate_roadmap()
 
         self.entities = [self.player]
+        
+        # for i in range(30):
+        #     self.generate_AI()
     
     def generate_AI(self):
         edge = random.randint(0,3)
         xy = get_ai_spawn_location(edge, self.obstacles)
-        if random.random() > .5:
-            self.entities.append(RandomAI(
-                     x=xy[0]
-                    ,y=xy[1]
-                    ,radius=random.randrange(MIN_RADIUS,MAX_RADIUS)
-                    ,color=(0,200,20)
-                    ,speed=random.randrange(2,5)
-                
-            ))
-        else:
-            self.entities.append(SimpleAI(
-                     x=xy[0]
-                    ,y=xy[1]
-                    ,radius=random.randrange(MIN_RADIUS,MAX_RADIUS)
-                    ,color=(0,50,200)
-                    ,speed=random.randrange(2,5)
-                    ))
+        self.entities.append(RandomAI(
+                 x=xy[0]
+                ,y=xy[1]
+                ,radius=random.randrange(MIN_RADIUS,MAX_RADIUS)
+                ,color=(0,200,20)
+                ,speed=random.randrange(2,5)
+        ))
+
+        edge = random.randint(0,3)
+        xy = get_ai_spawn_location(edge, self.obstacles)
+        self.entities.append(SimpleAI(
+                 x=xy[0]
+                ,y=xy[1]
+                ,radius=random.randrange(MIN_RADIUS,MAX_RADIUS)
+                ,color=(0,50,200)
+                ,speed=random.randrange(2,5)
+                ))
 
         edge = random.randint(0,3)
         xy = get_ai_spawn_location(edge, self.obstacles)
@@ -96,8 +97,6 @@ class Model:
                ,maxwidth=SCREEN_WIDTH
                ,maxheight=SCREEN_HEIGHT
         ))
-
-
 
     def __str__(self):
         return ''
@@ -158,7 +157,7 @@ class View:
         for entity in model.entities:
             entity.display(self.screen)
         if not model.lost:
-            self.elapsed_time = pygame.time.get_ticks() - self.start_time
+            self.elapsed_time = model.passed_time
         else:
             self.screen.blit(self.lose_text1, self.lose_text1rect)
             self.screen.blit(self.lose_text2, self.lose_text2rect)
@@ -167,7 +166,7 @@ class View:
 #        if model.debug:
 #            model.roadmap.display(self.screen)
             
-        timer = self.font.render("Time(s): " + str(self.elapsed_time / 1000), True, self.font_color)
+        timer = self.font.render("Time(s): {0:.1f}".format(self.elapsed_time), True, self.font_color)
         ai_spawned = self.font.render("AI Spawned: " + str(len(model.entities)-1), True, self.font_color)
         self.screen.blit(ai_spawned, (150, 68))
         self.screen.blit(timer, (150, 100))

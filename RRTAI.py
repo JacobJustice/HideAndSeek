@@ -19,9 +19,6 @@ def gen_random_move(R, cx, cy):
         y = cy + r*math.sin(theta)
         return np.array((x, y))
 
-
-
-# Define a function to compute the Euclidean distance between two points
 def distance(p1, p2):
     return np.linalg.norm(np.array(p1) - np.array(p2))
 
